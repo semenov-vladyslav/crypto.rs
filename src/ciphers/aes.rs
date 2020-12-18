@@ -67,6 +67,12 @@ macro_rules! impl_aes {
     };
 }
 
+pub mod AES_128_GCM {
+    use aes_gcm::Aes128Gcm;
+
+    impl_aes!(Aes128Gcm, /* key */ 16, /* iv */ 12, /* tag */ 16);
+}
+
 pub mod AES_256_GCM {
     use aes_gcm::Aes256Gcm;
 
