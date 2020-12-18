@@ -91,6 +91,33 @@ pub mod AES_256_GCM {
 mod tests {
     use super::*;
 
+    macro_rules! test_aes {
+        ($impl:ident, $tv:expr) => {{
+            let mut key = [0; $impl::KEY_LENGTH];
+            hex::decode_to_slice($tv.key, &mut key).unwrap();
+
+            let mut iv = [0; $impl::IV_LENGTH];
+            hex::decode_to_slice($tv.iv, &mut iv).unwrap();
+
+            let ad = hex::decode($tv.associated_data).unwrap();
+            let pt = hex::decode($tv.plaintext).unwrap();
+            let expected_ct = hex::decode($tv.ciphertext).unwrap();
+
+            let mut expected_tag = [0; $impl::TAG_LENGTH];
+            hex::decode_to_slice($tv.tag, &mut expected_tag).unwrap();
+
+            let mut ct = vec![0; pt.len()];
+            let mut tag = [0; $impl::TAG_LENGTH];
+            $impl::encrypt(&key, &iv, &ad, &pt, &mut ct, &mut tag)?;
+            assert_eq!(ct, expected_ct);
+            assert_eq!(tag, expected_tag);
+
+            let mut decrypted_plain_text = vec![0; ct.len()];
+            $impl::decrypt(&key, &iv, &ad, &tag, &ct, &mut decrypted_plain_text)?;
+            assert_eq!(decrypted_plain_text, pt);
+        }};
+    }
+
     struct TestVector {
         key: &'static str,
         iv: &'static str,
@@ -98,6 +125,49 @@ mod tests {
         plaintext: &'static str,
         ciphertext: &'static str,
         tag: &'static str,
+    }
+
+    #[test]
+    fn test_vectors_AES_128_GCM() -> crate::Result<()> {
+        let tvs = [
+            // https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/CAVP-TESTING-BLOCK-CIPHER-MODES#GCMVS
+            TestVector {
+                key: "c939cc13397c1d37de6ae0e1cb7c423c",
+                iv: "b3d8cc017cbb89b39e0f67e2",
+                plaintext: "c3b3c41f113a31b73d9a5cd432103069",
+                associated_data: "24825602bd12a984e0092d3e448eda5f",
+                ciphertext: "93fe7d9e9bfd10348a5606e5cafa7354",
+                tag: "0032a1dc85f1c9786925a2e71d8272dd",
+
+            },
+        ];
+
+        for tv in tvs.iter() {
+            test_aes!(AES_128_GCM, tv);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_vectors_AES_192_GCM() -> crate::Result<()> {
+        let tvs = [
+            // https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/CAVP-TESTING-BLOCK-CIPHER-MODES#GCMVS
+            TestVector {
+                key: "6f44f52c2f62dae4e8684bd2bc7d16ee7c557330305a790d",
+                iv: "9ae35825d7c7edc9a39a0732",
+                plaintext: "37222d30895eb95884bbbbaee4d9cae1",
+                associated_data: "1b4236b846fc2a0f782881ba48a067e9",
+                ciphertext: "a54b5da33fc1196a8ef31a5321bfcaeb",
+                tag: "1c198086450ae1834dd6c2636796bce2",
+            },
+        ];
+
+        for tv in tvs.iter() {
+            test_aes!(AES_192_GCM, tv);
+        }
+
+        Ok(())
     }
 
     #[test]
@@ -115,28 +185,7 @@ mod tests {
         ];
 
         for tv in tvs.iter() {
-            let mut key = [0; AES_256_GCM::KEY_LENGTH];
-            hex::decode_to_slice(tv.key, &mut key as &mut [u8]).unwrap();
-
-            let mut iv = [0; AES_256_GCM::IV_LENGTH];
-            hex::decode_to_slice(tv.iv, &mut iv as &mut [u8]).unwrap();
-
-            let ad = hex::decode(tv.associated_data).unwrap();
-            let pt = hex::decode(tv.plaintext).unwrap();
-            let expected_ct = hex::decode(tv.ciphertext).unwrap();
-
-            let mut expected_tag = [0; AES_256_GCM::TAG_LENGTH];
-            hex::decode_to_slice(tv.tag, &mut expected_tag as &mut [u8]).unwrap();
-
-            let mut ct = vec![0; pt.len()];
-            let mut tag = [0; AES_256_GCM::TAG_LENGTH];
-            AES_256_GCM::encrypt(&key, &iv, &ad, &pt, &mut ct, &mut tag)?;
-            assert_eq!(ct, expected_ct);
-            assert_eq!(tag, expected_tag);
-
-            let mut decrypted_plain_text = vec![0; ct.len()];
-            AES_256_GCM::decrypt(&key, &iv, &ad, &tag, &ct, &mut decrypted_plain_text)?;
-            assert_eq!(decrypted_plain_text, pt);
+            test_aes!(AES_256_GCM, tv);
         }
 
         Ok(())
