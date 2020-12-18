@@ -3,72 +3,74 @@
 
 #![allow(non_snake_case)]
 
-use crate::Error;
+macro_rules! impl_aes {
+    ($impl:ident, $key_len:expr, $iv_len:expr, $tag_len:expr $(,)?) => {
+        pub const KEY_LENGTH: usize = $key_len;
+        pub const IV_LENGTH: usize = $iv_len;
+        pub const TAG_LENGTH: usize = $tag_len;
+
+        pub fn encrypt(
+            key: &[u8; KEY_LENGTH],
+            iv: &[u8; IV_LENGTH],
+            associated_data: &[u8],
+            plaintext: &[u8],
+            ciphertext: &mut [u8],
+            tag: &mut [u8; TAG_LENGTH],
+        ) -> $crate::Result<()> {
+            use aes_gcm::aead::{AeadMutInPlace as _, NewAead as _};
+
+            if plaintext.len() > ciphertext.len() {
+                return Err($crate::Error::BufferSize {
+                    needs: plaintext.len(),
+                    has: ciphertext.len(),
+                });
+            }
+
+            ciphertext.copy_from_slice(plaintext);
+
+            let t = $impl::new(key.into())
+                .encrypt_in_place_detached((iv as &[_]).into(), associated_data, ciphertext)
+                .map_err(|_| $crate::Error::CipherError {
+                    alg: concat!(stringify!($impl), "::encrypt"),
+                })?;
+
+            tag.copy_from_slice(&t);
+
+            Ok(())
+        }
+
+        pub fn decrypt(
+            key: &[u8; KEY_LENGTH],
+            iv: &[u8; IV_LENGTH],
+            associated_data: &[u8],
+            tag: &[u8; TAG_LENGTH],
+            ciphertext: &[u8],
+            plaintext: &mut [u8],
+        ) -> $crate::Result<()> {
+            use aes_gcm::aead::{AeadMutInPlace as _, NewAead as _};
+
+            if ciphertext.len() > plaintext.len() {
+                return Err($crate::Error::BufferSize {
+                    needs: ciphertext.len(),
+                    has: plaintext.len(),
+                });
+            }
+
+            plaintext.copy_from_slice(ciphertext);
+
+            $impl::new(key.into())
+                .decrypt_in_place_detached((iv as &[_]).into(), associated_data, plaintext, tag.into())
+                .map_err(|_| $crate::Error::CipherError {
+                    alg: concat!(stringify!($impl), "::decrypt"),
+                })
+        }
+    };
+}
 
 pub mod AES_256_GCM {
-    use super::*;
-    use aes_gcm::{
-        aead::{generic_array::GenericArray, AeadMutInPlace, NewAead},
-        Aes256Gcm,
-    };
+    use aes_gcm::Aes256Gcm;
 
-    pub const KEY_LENGTH: usize = 32;
-    pub const IV_LENGTH: usize = 12;
-    pub const TAG_LENGTH: usize = 16;
-
-    pub fn encrypt(
-        key: &[u8; KEY_LENGTH],
-        iv: &[u8; IV_LENGTH],
-        associated_data: &[u8],
-        plaintext: &[u8],
-        ciphertext: &mut [u8],
-        tag: &mut [u8; TAG_LENGTH],
-    ) -> crate::Result<()> {
-        if plaintext.len() > ciphertext.len() {
-            return Err(Error::BufferSize {
-                needs: plaintext.len(),
-                has: ciphertext.len(),
-            });
-        }
-        ciphertext.copy_from_slice(plaintext);
-
-        let t = Aes256Gcm::new(GenericArray::from_slice(key))
-            .encrypt_in_place_detached(GenericArray::from_slice(iv), associated_data, ciphertext)
-            .map_err(|_| Error::CipherError {
-                alg: "AES_256_GCM::encrypt",
-            })?;
-
-        tag.copy_from_slice(t.as_slice());
-        Ok(())
-    }
-
-    pub fn decrypt(
-        key: &[u8; KEY_LENGTH],
-        iv: &[u8; IV_LENGTH],
-        associated_data: &[u8],
-        tag: &[u8; TAG_LENGTH],
-        ciphertext: &[u8],
-        plaintext: &mut [u8],
-    ) -> crate::Result<()> {
-        if ciphertext.len() > plaintext.len() {
-            return Err(Error::BufferSize {
-                needs: ciphertext.len(),
-                has: plaintext.len(),
-            });
-        }
-        plaintext.copy_from_slice(ciphertext);
-
-        Aes256Gcm::new(GenericArray::from_slice(key))
-            .decrypt_in_place_detached(
-                GenericArray::from_slice(iv),
-                associated_data,
-                plaintext,
-                GenericArray::from_slice(tag),
-            )
-            .map_err(|_| Error::CipherError {
-                alg: "AES_256_GCM::decrypt",
-            })
-    }
+    impl_aes!(Aes256Gcm, /* key */ 32, /* iv */ 12, /* tag */ 16);
 }
 
 #[cfg(test)]
