@@ -67,6 +67,12 @@ macro_rules! impl_aes {
     };
 }
 
+pub mod CHACHA20_POLY1305 {
+    use chacha20poly1305::ChaCha20Poly1305;
+
+    impl_aes!(ChaCha20Poly1305, /* key */ 32, /* iv */ 12, /* tag */ 16);
+}
+
 pub mod XCHACHA20_POLY1305 {
     use chacha20poly1305::XChaCha20Poly1305;
 
@@ -93,6 +99,119 @@ mod tests {
         nonce: &'static str,
         ciphertext: &'static str,
         tag: &'static str,
+    }
+
+    #[test]
+    fn test_vectors_CHACHA20_POLY1305() -> crate::Result<()> {
+        let tvs = [
+            // https://tools.ietf.org/html/rfc8439#section-2.8.2
+            TestVector {
+                plaintext: "4c616469657320616e642047656e746c656d656e206f662074686520636c617373206f66202739393a204966204920636f756c64206f6666657220796f75206f6e6c79206f6e652074697020666f7220746865206675747572652c2073756e73637265656e20776f756c642062652069742e",
+                associated_data: "50515253c0c1c2c3c4c5c6c7",
+                key: "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f",
+                nonce: "070000004041424344454647",
+                ciphertext: "d31a8d34648e60db7b86afbc53ef7ec2a4aded51296e08fea9e2b5a736ee62d63dbea45e8ca9671282fafb69da92728b1a71de0a9e060b2905d6a5b67ecd3b3692ddbd7f2d778b8c9803aee328091b58fab324e4fad675945585808b4831d7bc3ff4def08e4b7a9de576d26586cec64b6116",
+                tag: "1ae10b594f09e26a7e902ecbd0600691",
+            },
+        ];
+
+        for tv in tvs.iter() {
+            let plaintext = hex::decode(tv.plaintext).unwrap();
+            let associated_data = hex::decode(tv.associated_data).unwrap();
+
+            let mut key = [0; CHACHA20_POLY1305::KEY_LENGTH];
+            hex::decode_to_slice(tv.key, &mut key).unwrap();
+            let mut nonce = [0; CHACHA20_POLY1305::IV_LENGTH];
+            hex::decode_to_slice(tv.nonce, &mut nonce).unwrap();
+
+            let expected_ciphertext = hex::decode(tv.ciphertext).unwrap();
+            let expected_tag = hex::decode(tv.tag).unwrap();
+
+            let mut ciphertext = vec![0; plaintext.len()];
+            let mut tag = [0; CHACHA20_POLY1305::TAG_LENGTH];
+
+            CHACHA20_POLY1305::encrypt(
+                &key,
+                &nonce,
+                &associated_data,
+                &plaintext,
+                &mut ciphertext,
+                &mut tag,
+            )?;
+
+            assert_eq!(expected_ciphertext, ciphertext);
+            assert_eq!(expected_tag, tag);
+
+            let mut decrypted_plain_text = vec![0; ciphertext.len()];
+            CHACHA20_POLY1305::decrypt(
+                &key,
+                &nonce,
+                &associated_data,
+                &tag,
+                &ciphertext,
+                &mut decrypted_plain_text,
+            )?;
+            assert_eq!(decrypted_plain_text, plaintext);
+
+            let mut corrupted_tag = tag;
+            crate::test_utils::corrupt(&mut corrupted_tag);
+            assert!(CHACHA20_POLY1305::decrypt(
+                &key,
+                &nonce,
+                &associated_data,
+                &corrupted_tag,
+                &ciphertext,
+                &mut decrypted_plain_text,
+            )
+            .is_err());
+
+            let mut corrupted_nonce = nonce;
+            crate::test_utils::corrupt(&mut corrupted_nonce);
+            assert!(CHACHA20_POLY1305::decrypt(
+                &key,
+                &corrupted_nonce,
+                &associated_data,
+                &tag,
+                &ciphertext,
+                &mut decrypted_plain_text,
+            )
+            .is_err());
+
+            if !associated_data.is_empty() {
+                let mut corrupted_associated_data = associated_data.clone();
+                crate::test_utils::corrupt(&mut corrupted_associated_data);
+                assert!(CHACHA20_POLY1305::decrypt(
+                    &key,
+                    &nonce,
+                    &corrupted_associated_data,
+                    &tag,
+                    &ciphertext,
+                    &mut decrypted_plain_text,
+                )
+                .is_err());
+                assert!(CHACHA20_POLY1305::decrypt(
+                    &key,
+                    &nonce,
+                    &crate::test_utils::fresh::bytestring(),
+                    &tag,
+                    &ciphertext,
+                    &mut decrypted_plain_text,
+                )
+                .is_err());
+            } else {
+                assert!(CHACHA20_POLY1305::decrypt(
+                    &key,
+                    &nonce,
+                    &crate::test_utils::fresh::non_empty_bytestring(),
+                    &tag,
+                    &ciphertext,
+                    &mut decrypted_plain_text,
+                )
+                .is_err());
+            }
+        }
+
+        Ok(())
     }
 
     #[test]
