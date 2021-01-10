@@ -15,6 +15,7 @@ To be included in this list an implementation must:
 | Type | Feature Flag | Spec/RFC | Rust Source | Tests | Rating* | 
 | - | - | - | - | - | - | 
 | cipher | [`aes`](/src/ciphers/aes.rs) | [spec](https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/mac/gcmvs.pdf) | `aes-gcm` | [nist](ttps://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/CAVP-TESTING-BLOCK-CIPHER-MODES#GCMVS) | ★★★☆☆ |
+| cipher | [`aes-cbc`](/src/aes_cbc.rs) | [rfc](https://tools.ietf.org/html/rfc7518) | `crypto.rs` | [official](https://tools.ietf.org/html/rfc7518#appendix-B) | ☆☆☆☆☆ |
 | cipher | [`chacha`](/src/ciphers/chacha.rs) | [rfc](https://tools.ietf.org/html/draft-arciszewski-xchacha-03) | `chacha20poly1305` | [official](https://tools.ietf.org/html/draft-arciszewski-xchacha-03#appendix-A.3) | ★★★★★ |
 | hash | [`sha`](/src/hashes/sha.rs) | [spec](https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/shs/SHAVS.pdf) | `sha2` | [nist](https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing#shavs) | ★★★★★ | 
 | hash | [`curl-p`](/src/hashes/curl_p.rs) | [rfc](https://github.com/iotaledger/bee-rfcs/blob/master/text/0034-ternary-hash.md) | `bee-ternary` | official | ★★☆☆☆ | 
