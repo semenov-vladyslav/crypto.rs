@@ -11,6 +11,9 @@ pub mod hashes;
 pub mod kdfs;
 pub mod macs;
 
+#[cfg(feature = "aes-cbc")]
+pub mod aes_cbc;
+
 #[cfg(feature = "aes-kw")]
 pub mod aes_kw;
 

@@ -1,7 +1,7 @@
 // Copyright 2020 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-#![cfg(any(feature = "aes", feature = "chacha",))]
+#![cfg(any(feature = "aes", feature = "chacha", feature = "aes-cbc"))]
 
 use crypto::{
     ciphers::traits::Cipher,
@@ -26,7 +26,7 @@ fn test_cipher_one<C: Cipher>(tv: &TestVector) -> crypto::Result<()> {
     let expected_ctx = hex::decode(tv.ciphertext).unwrap();
     let expected_tag = hex::decode(tv.tag).unwrap();
 
-    let mut ctx = vec![0; ptx.len()];
+    let mut ctx = vec![0; ptx.len() + C::padsize(&ptx[..])];
     let tag = C::try_encrypt(&key, &iv, &aad, &ptx, &mut ctx)?;
 
     assert_eq!(&ctx[..], &expected_ctx[..]);
@@ -83,6 +83,27 @@ mod aes {
     #[test]
     fn test_vectors_aes_256_gcm() {
         test_cipher_all::<Aes256Gcm>(&include!("fixtures/aes_256_gcm.rs")).unwrap();
+    }
+}
+
+#[cfg(feature = "aes-cbc")]
+mod aes_cbc {
+    use super::{test_cipher_all, TestVector};
+    use crypto::ciphers::aes_cbc::{Aes128CbcHmac256, Aes192CbcHmac384, Aes256CbcHmac512};
+
+    #[test]
+    fn test_vectors_aes_128_cbc_hmac_256() {
+        test_cipher_all::<Aes128CbcHmac256>(&include!("fixtures/aes_128_cbc_hmac_sha_256.rs")).unwrap();
+    }
+
+    #[test]
+    fn test_vectors_aes_192_cbc_hmac_384() {
+        test_cipher_all::<Aes192CbcHmac384>(&include!("fixtures/aes_192_cbc_hmac_sha_384.rs")).unwrap();
+    }
+
+    #[test]
+    fn test_vectors_aes_256_cbc_hmac_512() {
+        test_cipher_all::<Aes256CbcHmac512>(&include!("fixtures/aes_256_cbc_hmac_sha_512.rs")).unwrap();
     }
 }
 

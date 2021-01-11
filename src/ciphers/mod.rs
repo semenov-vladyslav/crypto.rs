@@ -11,5 +11,8 @@ pub mod chacha;
 #[cfg(feature = "aes")]
 pub mod aes;
 
+#[cfg(feature = "aes-cbc")]
+pub mod aes_cbc;
+
 #[cfg(feature = "cipher")]
 pub mod traits;
