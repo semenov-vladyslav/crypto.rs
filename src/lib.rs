@@ -29,6 +29,18 @@ pub mod blake2b;
 #[cfg(feature = "bip39")]
 pub mod bip39;
 
+#[cfg(feature = "nist-p256")]
+pub mod nistp256;
+
+#[cfg(feature = "secp256k1")]
+pub mod secp256k1;
+
+#[cfg(feature = "x25519")]
+pub mod x25519;
+
+#[cfg(feature = "x448")]
+pub mod x448;
+
 #[cfg(any(test, feature = "alloc"))]
 #[macro_use]
 #[allow(unused_imports)]
@@ -48,6 +60,8 @@ pub enum Error {
     BufferSize { needs: usize, has: usize },
     ///  Cipher Error
     CipherError { alg: &'static str },
+    /// Signature Error
+    SignatureError { alg: &'static str },
     /// Convertion Error
     ConvertError { from: &'static str, to: &'static str },
     /// Private Key Error
@@ -77,6 +91,7 @@ impl fmt::Display for Error {
                 call,
                 raw_os_error: Some(errno),
             } => write!(f, "system error when calling {}: {}", call, errno),
+            Error::SignatureError { alg } => write!(f, "error in signature algorithm {}", alg),
         }
     }
 }

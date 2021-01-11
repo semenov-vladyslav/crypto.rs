@@ -34,6 +34,19 @@ impl SecretKey {
     }
 }
 
+impl TryFrom<&[u8]> for SecretKey {
+    type Error = crate::Error;
+
+    fn try_from(slice: &[u8]) -> crate::Result<Self> {
+        ed25519_zebra::SigningKey::try_from(slice)
+            .map(Self)
+            .map_err(|_| crate::Error::ConvertError {
+                from: "le bytes",
+                to: "Ed25519 secret key",
+            })
+    }
+}
+
 pub struct PublicKey(ed25519_zebra::VerificationKey);
 
 impl PublicKey {
@@ -49,6 +62,25 @@ impl PublicKey {
                 to: "Ed25519 public key",
             })
     }
+
+    pub fn verify(&self, msg: &[u8], sig: &[u8]) -> crate::Result<()> {
+        self.0
+            .verify(&Signature::try_from(sig)?.0, msg)
+            .map_err(|_| crate::Error::SignatureError { alg: "Ed25519" })
+    }
+}
+
+impl TryFrom<&[u8]> for PublicKey {
+    type Error = crate::Error;
+
+    fn try_from(slice: &[u8]) -> crate::Result<Self> {
+        ed25519_zebra::VerificationKey::try_from(slice)
+            .map(Self)
+            .map_err(|_| crate::Error::ConvertError {
+                from: "compressed bytes",
+                to: "Ed25519 secret key",
+            })
+    }
 }
 
 pub struct Signature(ed25519_zebra::Signature);
@@ -60,6 +92,19 @@ impl Signature {
 
     pub fn from_bytes(bs: [u8; SIGNATURE_LENGTH]) -> Self {
         Self(ed25519_zebra::Signature::from(bs))
+    }
+}
+
+impl TryFrom<&[u8]> for Signature {
+    type Error = crate::Error;
+
+    fn try_from(slice: &[u8]) -> crate::Result<Self> {
+        ed25519_zebra::Signature::try_from(slice)
+            .map(Self)
+            .map_err(|_| crate::Error::ConvertError {
+                from: "bytes",
+                to: "Ed25519 signature",
+            })
     }
 }
 
