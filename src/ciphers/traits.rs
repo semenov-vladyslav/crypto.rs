@@ -1,10 +1,10 @@
 // Copyright 2020 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use aes_gcm::aes::cipher::generic_array::{typenum::Unsigned, ArrayLength, GenericArray};
+use generic_array::{typenum::Unsigned, ArrayLength, GenericArray};
 
 pub mod consts {
-    pub use aes_gcm::aes::cipher::generic_array::typenum::*;
+    pub use generic_array::typenum::*;
 }
 
 pub type Key<T> = GenericArray<u8, T>;

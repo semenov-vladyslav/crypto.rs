@@ -1,16 +1,21 @@
 // Copyright 2020 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::Error;
+use crate::ciphers::traits::consts::{U12, U16, U24, U32};
 
-use chacha20poly1305::aead::{AeadMutInPlace, NewAead};
+pub type ChaCha20Poly1305 = chacha20poly1305::ChaCha20Poly1305;
+impl_aead!(ChaCha20Poly1305, "CHACHA20-POLY1305", U32, U12, U16);
+
+pub type XChaCha20Poly1305 = chacha20poly1305::XChaCha20Poly1305;
+impl_aead!(XChaCha20Poly1305, "XCHACHA20-POLY1305", U32, U24, U16);
 
 pub mod xchacha20poly1305 {
-    use super::*;
+    use crate::ciphers::chacha::XChaCha20Poly1305;
+    use crate::ciphers::traits::Cipher;
 
-    pub const XCHACHA20POLY1305_KEY_SIZE: usize = 32;
-    pub const XCHACHA20POLY1305_NONCE_SIZE: usize = 24;
-    pub const XCHACHA20POLY1305_TAG_SIZE: usize = 16;
+    pub const XCHACHA20POLY1305_KEY_SIZE: usize = <XChaCha20Poly1305 as Cipher>::KEY_LENGTH;
+    pub const XCHACHA20POLY1305_NONCE_SIZE: usize = <XChaCha20Poly1305 as Cipher>::NONCE_LENGTH;
+    pub const XCHACHA20POLY1305_TAG_SIZE: usize = <XChaCha20Poly1305 as Cipher>::TAG_LENGTH;
 
     pub fn encrypt(
         ciphertext: &mut [u8],
@@ -20,26 +25,8 @@ pub mod xchacha20poly1305 {
         nonce: &[u8; XCHACHA20POLY1305_NONCE_SIZE],
         associated_data: &[u8],
     ) -> crate::Result<()> {
-        if plaintext.len() > ciphertext.len() {
-            return Err(Error::BufferSize {
-                needs: plaintext.len(),
-                has: ciphertext.len(),
-            });
-        }
-        ciphertext.copy_from_slice(plaintext);
-
-        let k = chacha20poly1305::Key::from_slice(key);
-        let n = chacha20poly1305::XNonce::from_slice(nonce);
-        let mut c = chacha20poly1305::XChaCha20Poly1305::new(k);
-        match c.encrypt_in_place_detached(n, associated_data, ciphertext) {
-            Ok(t) => {
-                tag.copy_from_slice(t.as_slice());
-                Ok(())
-            }
-            Err(_) => Err(Error::CipherError {
-                alg: "xchacha20poly1305::encrypt",
-            }),
-        }
+        XChaCha20Poly1305::encrypt(key.into(), nonce.into(), associated_data, plaintext, ciphertext, tag.into())
+          .map_err(|_| crate::Error::CipherError { alg: "xchacha20poly1305::encrypt" })
     }
 
     pub fn decrypt(
@@ -50,22 +37,9 @@ pub mod xchacha20poly1305 {
         nonce: &[u8; XCHACHA20POLY1305_NONCE_SIZE],
         associated_data: &[u8],
     ) -> crate::Result<()> {
-        if ciphertext.len() > plaintext.len() {
-            return Err(Error::BufferSize {
-                needs: ciphertext.len(),
-                has: plaintext.len(),
-            });
-        }
-        plaintext.copy_from_slice(ciphertext);
-
-        let k = chacha20poly1305::Key::from_slice(key);
-        let n = chacha20poly1305::XNonce::from_slice(nonce);
-        let t = chacha20poly1305::Tag::from_slice(tag);
-        let mut c = chacha20poly1305::XChaCha20Poly1305::new(k);
-        c.decrypt_in_place_detached(n, associated_data, plaintext, t)
-            .map_err(|_| Error::CipherError {
-                alg: "xchacha20poly1305::decrypt",
-            })
+      XChaCha20Poly1305::decrypt(key.into(), nonce.into(), associated_data, tag.into(), ciphertext, plaintext)
+        .map_err(|_| crate::Error::CipherError { alg: "xchacha20poly1305::decrypt" })
+        .map(|_| ())
     }
 
     #[cfg(test)]

@@ -22,7 +22,7 @@ macro_rules! impl_aead {
         ctx: &mut [u8],
         tag: &mut $crate::ciphers::traits::Tag<Self::TagLength>,
       ) -> Result<(), Self::Error> {
-        use aes_gcm::aead::{AeadInPlace, NewAead};
+        use aead::{AeadInPlace, NewAead};
 
         if ptx.len() > ctx.len() {
             return Err($crate::Error::BufferSize { needs: ptx.len(), has: ctx.len() });
@@ -51,7 +51,7 @@ macro_rules! impl_aead {
         ctx: &[u8],
         ptx: &mut [u8],
       ) -> Result<usize, Self::Error> {
-        use aes_gcm::aead::{AeadInPlace, NewAead};
+        use aead::{AeadInPlace, NewAead};
 
         if ctx.len() > ptx.len() {
             return Err($crate::Error::BufferSize { needs: ctx.len(), has: ptx.len() });
