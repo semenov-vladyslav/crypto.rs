@@ -3,7 +3,10 @@
 
 #![cfg(any(feature = "aes", feature = "chacha",))]
 
-use crypto::ciphers::traits::Cipher;
+use crypto::{
+    ciphers::traits::Cipher,
+    test_utils::{corrupt, fresh},
+};
 
 struct TestVector {
     key: &'static str,
@@ -24,17 +27,32 @@ fn test_cipher_one<C: Cipher>(tv: &TestVector) -> crypto::Result<()> {
     let expected_tag = hex::decode(tv.tag).unwrap();
 
     let mut ctx = vec![0; ptx.len()];
-
     let tag = C::try_encrypt(&key, &iv, &aad, &ptx, &mut ctx)?;
 
     assert_eq!(&ctx[..], &expected_ctx[..]);
     assert_eq!(&tag[..], &expected_tag[..]);
 
     let mut out = vec![0; ctx.len()];
-
     let len = C::try_decrypt(&key, &iv, &aad, &tag, &ctx, &mut out)?;
 
     assert_eq!(&out[..len], &ptx[..]);
+
+    let mut corrupted_tag = tag.clone();
+    corrupt(&mut corrupted_tag);
+    assert!(C::try_decrypt(&key, &iv, &aad, &corrupted_tag, &ctx, &mut out).is_err());
+
+    let mut corrupted_nonce = iv.clone();
+    corrupt(&mut corrupted_nonce);
+    assert!(C::try_decrypt(&key, &corrupted_nonce, &aad, &tag, &ctx, &mut out).is_err());
+
+    if aad.is_empty() {
+        assert!(C::try_decrypt(&key, &iv, &fresh::non_empty_bytestring(), &tag, &ctx, &mut out).is_err());
+    } else {
+        let mut corrupted_associated_data = aad.clone();
+        corrupt(&mut corrupted_associated_data);
+        assert!(C::try_decrypt(&key, &iv, &corrupted_associated_data, &tag, &ctx, &mut out).is_err());
+        assert!(C::try_decrypt(&key, &iv, &fresh::bytestring(), &tag, &ctx, &mut out).is_err());
+    }
 
     Ok(())
 }
