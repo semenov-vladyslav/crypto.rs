@@ -26,14 +26,15 @@ pub mod blake2b;
 #[cfg(feature = "bip39")]
 pub mod bip39;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "alloc"))]
 #[macro_use]
 #[allow(unused_imports)]
 extern crate alloc;
 
-#[cfg(test)]
+#[cfg(any(test, all(feature = "alloc", feature = "rand")))]
 #[allow(dead_code)]
-mod test_utils;
+#[doc(hidden)]
+pub mod test_utils;
 
 use core::fmt;
 

@@ -19,11 +19,12 @@ name = "crypto"
 
 [features]
 default = [ ]
+alloc = [ ]
 aes-kw = [ "aes-crate" ]
-chacha = [ "chacha20poly1305" ]
+chacha = [ "aead", "chacha20poly1305", "cipher" ]
 ed25519 = [ "ed25519-zebra" ]
 random = [ "getrandom" ]
-aes = [ "aes-gcm" ]
+aes = [ "aead", "aes-gcm", "cipher" ]
 blake2b = [ "blake2b_simd" ]
 curl-p = [ "bee-ternary" ]
 sha = [ "sha2" ]
@@ -32,6 +33,7 @@ pbkdf = [ "pbkdf2" ]
 bip39 = [ "pbkdf", "hmac", "sha", "pbkdf", "unicode-normalization" ]
 bip39-en = [ "bip39" ]
 bip39-jp = [ "bip39" ]
+cipher = [ "generic-array" ]
 
 [dependencies]
 chacha20poly1305 = { version = "0.7.1", optional = true }
@@ -49,6 +51,16 @@ chacha20poly1305 = { version = "0.7.1", optional = true }
   [dependencies.aes-crate]
   version = "0.6"
   package = "aes"
+  optional = true
+  default-features = false
+
+  [dependencies.aead]
+  version = "0.3"
+  optional = true
+  default-features = false
+
+  [dependencies.generic-array]
+  version = "0.14"
   optional = true
   default-features = false
 
@@ -84,6 +96,11 @@ chacha20poly1305 = { version = "0.7.1", optional = true }
   optional = true
   default-features = false
 
+  [dependencies.rand]
+  version = "0.7"
+  optional = true
+  default-features = false
+
   [dependencies.unicode-normalization]
   version = "0.1.16"
   optional = true
@@ -94,3 +111,7 @@ hex = "0.4.2"
 rand = "0.7.3"
 serde = { version = "1.0.117", features = [ "derive" ] }
 serde_json = "1.0.59"
+# A workaround to enable support for using crate::test_utils in tests/
+#
+# More Info: https://github.com/rust-lang/cargo/issues/2911#issuecomment-749580481
+iota-crypto = { path = ".", features = ["alloc", "rand"] }
