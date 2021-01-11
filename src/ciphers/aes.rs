@@ -3,18 +3,24 @@
 
 #![allow(non_snake_case)]
 
-use crate::Error;
+use crate::ciphers::traits::consts::{U12, U16, U24, U32};
+
+pub type Aes128Gcm = aes_gcm::Aes128Gcm;
+impl_aead!(Aes128Gcm, "AES-128-GCM", U16, U12, U16);
+
+pub type Aes192Gcm = aes_gcm::AesGcm<aes_gcm::aes::Aes192, U12>;
+impl_aead!(Aes192Gcm, "AES-128-GCM", U24, U12, U16);
+
+pub type Aes256Gcm = aes_gcm::Aes256Gcm;
+impl_aead!(Aes256Gcm, "AES-128-GCM", U32, U12, U16);
 
 pub mod AES_256_GCM {
-    use super::*;
-    use aes_gcm::{
-        aead::{generic_array::GenericArray, AeadMutInPlace, NewAead},
-        Aes256Gcm,
-    };
+    use crate::ciphers::aes::Aes256Gcm;
+    use crate::ciphers::traits::Cipher;
 
-    pub const KEY_LENGTH: usize = 32;
-    pub const IV_LENGTH: usize = 12;
-    pub const TAG_LENGTH: usize = 16;
+    pub const KEY_LENGTH: usize = <Aes256Gcm as Cipher>::KEY_LENGTH;
+    pub const IV_LENGTH: usize = <Aes256Gcm as Cipher>::NONCE_LENGTH;
+    pub const TAG_LENGTH: usize = <Aes256Gcm as Cipher>::TAG_LENGTH;
 
     pub fn encrypt(
         key: &[u8; KEY_LENGTH],
@@ -24,22 +30,8 @@ pub mod AES_256_GCM {
         ciphertext: &mut [u8],
         tag: &mut [u8; TAG_LENGTH],
     ) -> crate::Result<()> {
-        if plaintext.len() > ciphertext.len() {
-            return Err(Error::BufferSize {
-                needs: plaintext.len(),
-                has: ciphertext.len(),
-            });
-        }
-        ciphertext.copy_from_slice(plaintext);
-
-        let t = Aes256Gcm::new(GenericArray::from_slice(key))
-            .encrypt_in_place_detached(GenericArray::from_slice(iv), associated_data, ciphertext)
-            .map_err(|_| Error::CipherError {
-                alg: "AES_256_GCM::encrypt",
-            })?;
-
-        tag.copy_from_slice(t.as_slice());
-        Ok(())
+        Aes256Gcm::encrypt(key.into(), iv.into(), associated_data, plaintext, ciphertext, tag.into())
+          .map_err(|_| crate::Error::CipherError { alg: "AES_256_GCM::encrypt" })
     }
 
     pub fn decrypt(
@@ -50,24 +42,9 @@ pub mod AES_256_GCM {
         ciphertext: &[u8],
         plaintext: &mut [u8],
     ) -> crate::Result<()> {
-        if ciphertext.len() > plaintext.len() {
-            return Err(Error::BufferSize {
-                needs: ciphertext.len(),
-                has: plaintext.len(),
-            });
-        }
-        plaintext.copy_from_slice(ciphertext);
-
-        Aes256Gcm::new(GenericArray::from_slice(key))
-            .decrypt_in_place_detached(
-                GenericArray::from_slice(iv),
-                associated_data,
-                plaintext,
-                GenericArray::from_slice(tag),
-            )
-            .map_err(|_| Error::CipherError {
-                alg: "AES_256_GCM::decrypt",
-            })
+      Aes256Gcm::decrypt(key.into(), iv.into(), associated_data, tag.into(), ciphertext, plaintext)
+        .map_err(|_| crate::Error::CipherError { alg: "AES_256_GCM::decrypt" })
+        .map(|_| ())
     }
 }
 
