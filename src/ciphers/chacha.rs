@@ -10,8 +10,7 @@ pub type XChaCha20Poly1305 = chacha20poly1305::XChaCha20Poly1305;
 impl_aead!(XChaCha20Poly1305, "XCHACHA20-POLY1305", U32, U24, U16);
 
 pub mod xchacha20poly1305 {
-    use crate::ciphers::chacha::XChaCha20Poly1305;
-    use crate::ciphers::traits::Cipher;
+    use crate::ciphers::{chacha::XChaCha20Poly1305, traits::Cipher};
 
     pub const XCHACHA20POLY1305_KEY_SIZE: usize = <XChaCha20Poly1305 as Cipher>::KEY_LENGTH;
     pub const XCHACHA20POLY1305_NONCE_SIZE: usize = <XChaCha20Poly1305 as Cipher>::NONCE_LENGTH;
@@ -25,8 +24,14 @@ pub mod xchacha20poly1305 {
         nonce: &[u8; XCHACHA20POLY1305_NONCE_SIZE],
         associated_data: &[u8],
     ) -> crate::Result<()> {
-        XChaCha20Poly1305::encrypt(key.into(), nonce.into(), associated_data, plaintext, ciphertext, tag.into())
-          .map_err(|_| crate::Error::CipherError { alg: "xchacha20poly1305::encrypt" })
+        XChaCha20Poly1305::encrypt(
+            key.into(),
+            nonce.into(),
+            associated_data,
+            plaintext,
+            ciphertext,
+            tag.into(),
+        )
     }
 
     pub fn decrypt(
@@ -37,8 +42,14 @@ pub mod xchacha20poly1305 {
         nonce: &[u8; XCHACHA20POLY1305_NONCE_SIZE],
         associated_data: &[u8],
     ) -> crate::Result<()> {
-      XChaCha20Poly1305::decrypt(key.into(), nonce.into(), associated_data, tag.into(), ciphertext, plaintext)
-        .map_err(|_| crate::Error::CipherError { alg: "xchacha20poly1305::decrypt" })
+        XChaCha20Poly1305::decrypt(
+            key.into(),
+            nonce.into(),
+            associated_data,
+            tag.into(),
+            ciphertext,
+            plaintext,
+        )
         .map(|_| ())
     }
 

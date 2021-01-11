@@ -15,8 +15,7 @@ pub type Aes256Gcm = aes_gcm::Aes256Gcm;
 impl_aead!(Aes256Gcm, "AES-128-GCM", U32, U12, U16);
 
 pub mod AES_256_GCM {
-    use crate::ciphers::aes::Aes256Gcm;
-    use crate::ciphers::traits::Cipher;
+    use crate::ciphers::{aes::Aes256Gcm, traits::Cipher};
 
     pub const KEY_LENGTH: usize = <Aes256Gcm as Cipher>::KEY_LENGTH;
     pub const IV_LENGTH: usize = <Aes256Gcm as Cipher>::NONCE_LENGTH;
@@ -30,8 +29,14 @@ pub mod AES_256_GCM {
         ciphertext: &mut [u8],
         tag: &mut [u8; TAG_LENGTH],
     ) -> crate::Result<()> {
-        Aes256Gcm::encrypt(key.into(), iv.into(), associated_data, plaintext, ciphertext, tag.into())
-          .map_err(|_| crate::Error::CipherError { alg: "AES_256_GCM::encrypt" })
+        Aes256Gcm::encrypt(
+            key.into(),
+            iv.into(),
+            associated_data,
+            plaintext,
+            ciphertext,
+            tag.into(),
+        )
     }
 
     pub fn decrypt(
@@ -42,8 +47,14 @@ pub mod AES_256_GCM {
         ciphertext: &[u8],
         plaintext: &mut [u8],
     ) -> crate::Result<()> {
-      Aes256Gcm::decrypt(key.into(), iv.into(), associated_data, tag.into(), ciphertext, plaintext)
-        .map_err(|_| crate::Error::CipherError { alg: "AES_256_GCM::decrypt" })
+        Aes256Gcm::decrypt(
+            key.into(),
+            iv.into(),
+            associated_data,
+            tag.into(),
+            ciphertext,
+            plaintext,
+        )
         .map(|_| ())
     }
 }
