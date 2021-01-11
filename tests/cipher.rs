@@ -67,3 +67,19 @@ mod aes {
         test_cipher_all::<Aes256Gcm>(&include!("fixtures/aes_256_gcm.rs")).unwrap();
     }
 }
+
+#[cfg(feature = "chacha")]
+mod chacha {
+    use super::{test_cipher_all, TestVector};
+    use crypto::ciphers::chacha::{ChaCha20Poly1305, XChaCha20Poly1305};
+
+    #[test]
+    fn test_vectors_chacha20_poly1305() {
+        test_cipher_all::<ChaCha20Poly1305>(&include!("fixtures/chacha20_poly1305.rs")).unwrap();
+    }
+
+    #[test]
+    fn test_vectors_xchacha20_poly1305() {
+        test_cipher_all::<XChaCha20Poly1305>(&include!("fixtures/xchacha20_poly1305.rs")).unwrap();
+    }
+}
