@@ -22,7 +22,7 @@ default = [ ]
 aes-kw = [ "aes-crate" ]
 chacha = [ "chacha20poly1305" ]
 ed25519 = [ "ed25519-zebra" ]
-random = [ "getrandom" ]
+random = [ "getrandom", "rand_core" ]
 aes = [ "aes-gcm" ]
 blake2b = [ "blake2b_simd" ]
 curl-p = [ "bee-ternary" ]
@@ -32,6 +32,7 @@ pbkdf = [ "pbkdf2" ]
 bip39 = [ "pbkdf", "hmac", "sha", "pbkdf", "unicode-normalization" ]
 bip39-en = [ "bip39" ]
 bip39-jp = [ "bip39" ]
+signature = [ "curve25519-dalek", "rand_core", "zeroize", "zeroize_derive" ] # "sha"
 
 [dependencies]
 chacha20poly1305 = { version = "0.7.1", optional = true }
@@ -88,6 +89,26 @@ chacha20poly1305 = { version = "0.7.1", optional = true }
   version = "0.1.16"
   optional = true
   default-features = false
+
+  [dependencies.curve25519-dalek]
+  version = "3"
+  optional = true
+  default-features = false
+  features = [ "u64_backend", "alloc" ]
+
+  [dependencies.rand_core]
+  version = "0.6"
+  optional = true
+
+  [dependencies.zeroize]
+  version = "1.2"
+  optional = true
+  default-features = false
+  features = [ "alloc" ]
+
+  [dependencies.zeroize_derive]
+  version = "1.0"
+  optional = true
 
 [dev-dependencies]
 hex = "0.4.2"

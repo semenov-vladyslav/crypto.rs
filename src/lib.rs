@@ -1,7 +1,7 @@
 // Copyright 2020 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 #[macro_use]
 mod macros;
@@ -13,6 +13,9 @@ pub mod macs;
 
 #[cfg(feature = "aes-kw")]
 pub mod aes_kw;
+
+#[cfg(feature = "signature")]
+pub mod signature;
 
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
@@ -26,7 +29,7 @@ pub mod blake2b;
 #[cfg(feature = "bip39")]
 pub mod bip39;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "signature"))]
 #[macro_use]
 #[allow(unused_imports)]
 extern crate alloc;
@@ -48,6 +51,8 @@ pub enum Error {
     ConvertError { from: &'static str, to: &'static str },
     /// Private Key Error
     PrivateKeyError,
+    /// Signature Error
+    SignatureError,
     /// InvalidArgumentError
     InvalidArgumentError { alg: &'static str, expected: &'static str },
     /// System Error
@@ -64,6 +69,7 @@ impl fmt::Display for Error {
             Error::CipherError { alg } => write!(f, "error in algorithm {}", alg),
             Error::ConvertError { from, to } => write!(f, "failed to convert {} to {}", from, to),
             Error::PrivateKeyError => write!(f, "Failed to generate private key."),
+            Error::SignatureError => write!(f, "Bad signature."),
             Error::InvalidArgumentError { alg, expected } => write!(f, "{} expects {}", alg, expected),
             Error::SystemError {
                 call,
